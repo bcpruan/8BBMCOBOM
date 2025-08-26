@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>COBOM → WhatsApp</title>
+
+<link rel="icon" type="image/png" href="icon.png" />
+<meta name="theme-color" content="#cc0000" />
+
+<style>
+  :root { --bg:#1a0000; --fg:#fff2f2; --muted:#ffb3b3; --card:#260000; --accent:#cc0000; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,Arial,Segoe UI,Roboto;background:var(--bg);color:var(--fg)}
+  h1{font-size:20px;margin:16px}
+  .wrap{max-width:900px;margin:0 auto 80px;padding:0 16px}
+  .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+  .card{background:var(--card);border:1px solid #400000;border-radius:16px;padding:16px}
+  label{display:block;font-weight:600;margin-bottom:6px}
+  select,input[type="text"]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #660000;background:#0f0000;color:var(--fg)}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .item{display:flex;gap:8px}
+  .item input{flex:1}
+  .btn{border:1px solid #660000;background:#0f0000;color:var(--fg);padding:6px 12px;border-radius:10px;cursor:pointer;font-weight:700}
+  .btn:hover{border-color:#aa0000}
+  .primary{background:var(--accent);border-color:transparent}
+  .final{margin-top:20px}
+  #preview{white-space:pre-wrap;line-height:1.45;margin-top:10px;font-size:14px}
+  .muted{color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>COBOM → WhatsApp</h1>
+
+  <div class="grid">
+    <!-- BLOCO MILITARES -->
+    <div class="card">
+      <label for="turno-mil">Turno — MILITARES</label>
+      <select id="turno-mil">
+        <option value="">— selecione —</option>
+        <option>01hr as 07hrs</option>
+        <option>07hrs as 13hrs</option>
+        <option>13hrs as 19hrs</option>
+        <option>19hrs as 01hr</option>
+      </select>
+      <div class="row" style="justify-content:space-between;margin-top:12px;">
+        <label style="margin:0">Militares (Graduação / Nome)</label>
+        <div class="row">
+          <button type="button" class="btn" id="mil-add">Adicionar</button>
+          <button type="button" class="btn" id="mil-rem">Remover</button>
+        </div>
+      </div>
+      <div id="mil-list" class="list"></div>
+    </div>
+
+    <!-- BLOCO BCR -->
+    <div class="card">
+      <label for="turno-com">Turno — COMUNITÁRIOS (BCR)</label>
+      <select id="turno-com">
+        <option value="">— selecione —</option>
+        <option>01hr as 07hrs</option>
+        <option>07hrs as 13hrs</option>
+        <option>13hrs as 19hrs</option>
+        <option>15hrs as 21hrs</option>
+        <option>19hrs as 01hr</option>
+      </select>
+      <div class="row" style="justify-content:space-between;margin-top:12px;">
+        <label style="margin:0">BCR de serviço (Nome)</label>
+        <div class="row">
+          <button type="button" class="btn" id="bcr-add">Adicionar</button>
+          <button type="button" class="btn" id="bcr-rem">Remover</button>
+        </div>
+      </div>
+      <div id="bcr-list" class="list"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <label>Prévia da mensagem</label>
+    <div id="preview"></div>
+  </div>
+
+  <div class="final">
+    <div class="card">
+      <button class="btn primary" id="finalizar" style="width:100%">FINALIZAR (enviar WhatsApp)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // utilidade
+  const toUpper = el => el.value = el.value.toUpperCase();
+  document.addEventListener('input', e => { if (e.target.matches('.upper')) toUpper(e.target); });
+
+  // listas dinâmicas
+  const milList = document.getElementById('mil-list');
+  const bcrList = document.getElementById('bcr-list');
+
+  function addItem(listEl, placeholder=''){
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `<input type="text" class="upper" placeholder="${placeholder}" />`;
+    listEl.appendChild(div);
+    atualizarPreview();
+  }
+  function remItem(listEl){
+    if(listEl.lastElementChild){ listEl.removeChild(listEl.lastElementChild); atualizarPreview(); }
+  }
+
+  document.getElementById('mil-add').addEventListener('click', ()=> addItem(milList, 'GRADUAÇÃO / NOME'));
+  document.getElementById('mil-rem').addEventListener('click', ()=> remItem(milList));
+  document.getElementById('bcr-add').addEventListener('click', ()=> addItem(bcrList, 'BCR / NOME'));
+  document.getElementById('bcr-rem').addEventListener('click', ()=> remItem(bcrList));
+
+  // gera mensagem
+  function listaTexto(listEl){
+    return Array.from(listEl.querySelectorAll('input'))
+      .map(i => i.value.trim())
+      .filter(v => v.length>0)
+      .map(v => `*${v}*`) // cada nome em negrito
+      .join(', ');
+  }
+
+  function gerarMensagem(){
+    const turnoMil = document.getElementById('turno-mil').value;
+    const turnoCom = document.getElementById('turno-com').value;
+    const militares = listaTexto(milList);
+    const bcrs = listaTexto(bcrList);
+
+    const l1 = `Assumindo serviço no *COBOM* (${militares || '—'}) das *${turnoMil || '--'}*.`;
+    const l2 = `*BCR* (${bcrs || '—'}) das *${turnoCom || '--'}*.`;
+    return `${l1}\n${l2}`;
+  }
+
+  // preview
+  const preview = document.getElementById('preview');
+  function atualizarPreview(){ preview.textContent = gerarMensagem(); }
+  document.getElementById('turno-mil').addEventListener('change', atualizarPreview);
+  document.getElementById('turno-com').addEventListener('change', atualizarPreview);
+  document.addEventListener('input', e=>{
+    if(e.target.closest('#mil-list') || e.target.closest('#bcr-list')) atualizarPreview();
+  });
+
+  // abrir WhatsApp (mobile/app vs desktop/web)
+  const isMobile = /Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry/i.test(navigator.userAgent);
+  function abrirWhatsApp(textoPlano){
+    const enc = encodeURIComponent(textoPlano);
+    if (isMobile) {
+      window.location.href = `whatsapp://send?text=${enc}`;
+      setTimeout(()=>{ window.location.href = `https://api.whatsapp.com/send?text=${enc}`; }, 1200);
+    } else {
+      window.open(`https://web.whatsapp.com/send?text=${enc}`, '_blank');
+    }
+  }
+
+  document.getElementById('finalizar').addEventListener('click', ()=>{
+    abrirWhatsApp(gerarMensagem());
+  });
+
+  // inicialização
+  atualizarPreview();
+</script>
+</body>
+</html>
