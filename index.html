@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>COBOM → WhatsApp</title>
+<title>COBOM 8º BBM→ WhatsApp</title>
 
 <link rel="icon" type="image/png" href="icon.png" />
 <meta name="theme-color" content="#cc0000" />
@@ -32,7 +32,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>COBOM → WhatsApp</h1>
+  <h1>COBOM 8º BBM→ WhatsApp</h1>
 
   <div class="grid">
     <!-- BLOCO MILITARES -->
@@ -114,7 +114,7 @@
   document.getElementById('bcr-add').addEventListener('click', ()=> addItem(bcrList, 'BCR / NOME'));
   document.getElementById('bcr-rem').addEventListener('click', ()=> remItem(bcrList));
 
-  // gera mensagem
+  // helpers
   function listaTexto(listEl){
     return Array.from(listEl.querySelectorAll('input'))
       .map(i => i.value.trim())
@@ -122,6 +122,7 @@
       .map(v => `*${v}*`) // cada nome em negrito
       .join(', ');
   }
+  const hasValue = s => !!(s && s.trim().length);
 
   function gerarMensagem(){
     const turnoMil = document.getElementById('turno-mil').value;
@@ -129,9 +130,17 @@
     const militares = listaTexto(milList);
     const bcrs = listaTexto(bcrList);
 
-    const l1 = `Assumindo serviço no *COBOM* (${militares || '—'}) das *${turnoMil || '--'}*.`;
-    const l2 = `*BCR* (${bcrs || '—'}) das *${turnoCom || '--'}*.`;
-    return `${l1}\n${l2}`;
+    const linhas = [];
+
+    // Linha MILITARES (mantém mesmo sem nomes/turno)
+    linhas.push(`Assumindo serviço no *COBOM* (${militares || '—'}) das *${hasValue(turnoMil) ? turnoMil : '--'}*`);
+
+    // Linha BCR só aparece se tiver AO MENOS um nome E um turno selecionado
+    if (hasValue(bcrs) && hasValue(turnoCom)) {
+      linhas.push(`*BCR* (${bcrs}) das *${turnoCom}*`);
+    }
+
+    return linhas.join('\n');
   }
 
   // preview
@@ -159,7 +168,6 @@
     abrirWhatsApp(gerarMensagem());
   });
 
-  // inicialização
   atualizarPreview();
 </script>
 </body>
